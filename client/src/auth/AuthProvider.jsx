@@ -75,19 +75,27 @@ export function AuthProvider({ children }) {
     [applySession],
   )
 
-  const register = useCallback(
-    async (fields) => {
+  // Creates the account and emails a code; signing in happens in verifyEmail
+  const register = useCallback(async (fields) => {
+    setAuthToken(null)
+    return api('/auth/register', { method: 'POST', body: fields })
+  }, [])
+
+  const verifyEmail = useCallback(
+    async (email, code) => {
       setAuthToken(null)
-      const result = await api('/auth/register', { method: 'POST', body: fields })
+      const result = await api('/auth/verify-email', { method: 'POST', body: { email, code } })
       applySession(result.token, result.user)
       return result.user
     },
     [applySession],
   )
 
+  const resendCode = useCallback((email) => api('/auth/resend-code', { method: 'POST', body: { email } }), [])
+
   const value = useMemo(
-    () => ({ user, status, login, register, logout }),
-    [user, status, login, register, logout],
+    () => ({ user, status, login, register, verifyEmail, resendCode, logout }),
+    [user, status, login, register, verifyEmail, resendCode, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -18,6 +18,8 @@ const User = sequelize.define(
       defaultValue: 'student',
     },
     isActive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
+    // null until a self-registered student enters their emailed code
+    emailVerifiedAt: { type: DataTypes.DATE, allowNull: true },
   },
   {
     tableName: 'users',

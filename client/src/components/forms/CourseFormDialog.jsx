@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { api } from '../../lib/api'
-import { fieldError, formError } from '../../lib/errors'
+import { fieldError, focusFirstInvalid, summaryMessage } from '../../lib/errors'
 import { useApi } from '../../lib/useApi'
 import { Dialog, DialogActions } from '../Dialog'
 import { Alert, Spinner, TextField } from '../ui'
@@ -18,6 +18,7 @@ export function CourseFormDialog({ course, onClose, onSaved }) {
   })
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
+  const formRef = useRef(null)
 
   const update = (event) => setForm({ ...form, [event.target.name]: event.target.value })
   const activeLecturers = lecturers.data?.users.filter((u) => u.isActive || u.id === course?.lecturerId) ?? []
@@ -40,13 +41,13 @@ export function CourseFormDialog({ course, onClose, onSaved }) {
     } catch (err) {
       setError(err)
       setBusy(false)
+      focusFirstInvalid(formRef.current)
     }
   }
 
   return (
     <Dialog title={course ? 'Edit course' : 'New course'} onClose={onClose} busy={busy}>
-      <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-        {formError(error, FIELDS) && <Alert>{formError(error, FIELDS)}</Alert>}
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-5" noValidate>
 
         <div className="grid gap-5 sm:grid-cols-[8rem_1fr]">
           <TextField
@@ -100,7 +101,12 @@ export function CourseFormDialog({ course, onClose, onSaved }) {
           </TextField>
         )}
 
-        <DialogActions busy={busy} submitLabel={course ? 'Save changes' : 'Create course'} onCancel={onClose} />
+        <DialogActions
+          busy={busy}
+          submitLabel={course ? 'Save changes' : 'Create course'}
+          onCancel={onClose}
+          error={summaryMessage(error, FIELDS)}
+        />
       </form>
     </Dialog>
   )

@@ -78,6 +78,24 @@ test('login rejects an unknown role tab', async () => {
   assert.ok(body.details.role)
 })
 
+test('verify-email needs a 6-digit code and resend-code needs an email', async () => {
+  const post = (path, body) =>
+    fetch(`${baseUrl}/api/auth/${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+
+  const shortCode = await post('verify-email', { email: 'student@example.com', code: '12345' })
+  const letters = await post('verify-email', { email: 'student@example.com', code: 'abcdef' })
+  const badEmail = await post('resend-code', { email: 'not-an-email' })
+
+  assert.equal(shortCode.status, 400)
+  assert.ok((await shortCode.json()).details.code)
+  assert.equal(letters.status, 400)
+  assert.equal(badEmail.status, 400)
+})
+
 test('GET /api/auth/me without a token returns 401', async () => {
   const response = await fetch(`${baseUrl}/api/auth/me`)
 

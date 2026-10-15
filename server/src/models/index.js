@@ -7,6 +7,11 @@ const Question = require('./Question')
 const QuestionOption = require('./QuestionOption')
 const ExamAttempt = require('./ExamAttempt')
 const AttemptAnswer = require('./AttemptAnswer')
+const EmailVerificationCode = require('./EmailVerificationCode')
+
+// Each user has at most one active email verification code
+User.hasOne(EmailVerificationCode, { as: 'verificationCode', foreignKey: 'userId', onDelete: 'CASCADE' })
+EmailVerificationCode.belongsTo(User, { as: 'user', foreignKey: 'userId' })
 
 // Lecturers teach courses
 User.hasMany(Course, { as: 'taughtCourses', foreignKey: 'lecturerId' })
@@ -62,4 +67,5 @@ module.exports = {
   QuestionOption,
   ExamAttempt,
   AttemptAnswer,
+  EmailVerificationCode,
 }

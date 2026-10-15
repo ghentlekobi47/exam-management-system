@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useAuth } from '../../auth/useAuth'
 import { api } from '../../lib/api'
-import { fieldError, formError } from '../../lib/errors'
+import { fieldError, focusFirstInvalid, summaryMessage } from '../../lib/errors'
 import { formatDateTime } from '../../lib/format'
 import { useApi } from '../../lib/useApi'
 import { ConfirmDialog, Dialog, DialogActions } from '../../components/Dialog'
@@ -205,6 +205,7 @@ function AddUserDialog({ defaultRole, onClose, onSaved }) {
   const [form, setForm] = useState({ fullName: '', email: '', password: '', role: defaultRole })
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
+  const formRef = useRef(null)
 
   const update = (event) => setForm({ ...form, [event.target.name]: event.target.value })
 
@@ -218,13 +219,13 @@ function AddUserDialog({ defaultRole, onClose, onSaved }) {
     } catch (err) {
       setError(err)
       setBusy(false)
+      focusFirstInvalid(formRef.current)
     }
   }
 
   return (
     <Dialog title="Add a user" onClose={onClose} busy={busy}>
-      <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-        {formError(error, ADD_FIELDS) && <Alert>{formError(error, ADD_FIELDS)}</Alert>}
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-5" noValidate>
         <TextField label="Full name" name="fullName" value={form.fullName} onChange={update} error={fieldError(error, 'fullName')} autoFocus />
         <TextField label="Email" name="email" type="email" value={form.email} onChange={update} error={fieldError(error, 'email')} />
         <TextField
@@ -244,7 +245,7 @@ function AddUserDialog({ defaultRole, onClose, onSaved }) {
             </option>
           ))}
         </TextField>
-        <DialogActions busy={busy} submitLabel="Add user" onCancel={onClose} />
+        <DialogActions busy={busy} submitLabel="Add user" onCancel={onClose} error={summaryMessage(error, ADD_FIELDS)} />
       </form>
     </Dialog>
   )

@@ -1,5 +1,5 @@
 import { useEffect, useId } from 'react'
-import { Button } from './ui'
+import { Alert, Button } from './ui'
 
 // A centred pop-up. Closes on Escape or a click outside (unless `busy`).
 export function Dialog({ title, children, onClose, busy = false, wide = false }) {
@@ -52,16 +52,20 @@ export function ConfirmDialog({ title, children, confirmLabel, tone = 'primary',
   )
 }
 
-// Cancel / Save row at the bottom of a form inside a dialog
-export function DialogActions({ busy, submitLabel, onCancel }) {
+// Cancel / Save row at the bottom of a form inside a dialog. `error` shows right above
+// the buttons, so the user sees why saving didn't work without scrolling.
+export function DialogActions({ busy, submitLabel, onCancel, error }) {
   return (
-    <div className="mt-8 flex justify-end gap-3">
-      <Button variant="secondary" onClick={onCancel} disabled={busy}>
-        Cancel
-      </Button>
-      <Button type="submit" busy={busy}>
-        {submitLabel}
-      </Button>
+    <div className="mt-8 space-y-4">
+      {error && <Alert>{error}</Alert>}
+      <div className="flex justify-end gap-3">
+        <Button variant="secondary" onClick={onCancel} disabled={busy}>
+          Cancel
+        </Button>
+        <Button type="submit" busy={busy}>
+          {submitLabel}
+        </Button>
+      </div>
     </div>
   )
 }

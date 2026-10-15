@@ -28,6 +28,7 @@ module.exports = {
       password_hash: passwordHash,
       role,
       is_active: true,
+      email_verified_at: now,
       created_at: now,
       updated_at: now,
     })

@@ -4,6 +4,7 @@ const { UniqueConstraintError } = require('sequelize')
 const env = require('../../config/env')
 const { User } = require('../../models')
 const HttpError = require('../../utils/httpError')
+const emailVerification = require('./emailVerification')
 
 const SALT_ROUNDS = 12
 
@@ -24,7 +25,8 @@ function toPublicUser(user) {
   return publicUser
 }
 
-async function createUser({ fullName, email, password, role }) {
+// Accounts an admin creates count as verified; self sign-ups verify by email first
+async function createUser({ fullName, email, password, role }, { verified = true } = {}) {
   if (await User.findOne({ where: { email } })) {
     throw new HttpError(409, 'An account with this email already exists')
   }
@@ -35,6 +37,7 @@ async function createUser({ fullName, email, password, role }) {
       email,
       passwordHash: await hashPassword(password),
       role,
+      emailVerifiedAt: verified ? new Date() : null,
     })
     return toPublicUser(user)
   } catch (err) {
@@ -45,9 +48,35 @@ async function createUser({ fullName, email, password, role }) {
   }
 }
 
-// Public sign-up always creates a student
-function registerStudent({ fullName, email, password }) {
-  return createUser({ fullName, email, password, role: 'student' })
+// Public sign-up always creates a student, who must enter the emailed code before signing in
+async function registerStudent({ fullName, email, password }) {
+  const created = await createUser({ fullName, email, password, role: 'student' }, { verified: false })
+  const user = await User.findByPk(created.id)
+  const emailSent = await emailVerification.sendNewCode(user)
+  return { email: user.email, emailSent }
+}
+
+async function verifyEmail({ email, code }) {
+  const user = await User.findOne({ where: { email } })
+
+  if (!user || !user.isActive) {
+    throw new HttpError(400, 'That code isn\'t right. Request a new code and try again.')
+  }
+  // Never hand out a token without checking a code: verified accounts sign in with their password
+  if (user.emailVerifiedAt) {
+    throw new HttpError(400, 'This email is already verified. Sign in with your password.')
+  }
+
+  await emailVerification.checkCode(user, code)
+  return { user: toPublicUser(user), token: signToken(user) }
+}
+
+// Always the same answer, so this can't be used to find out which emails have accounts
+async function resendCode({ email }) {
+  const user = await User.findOne({ where: { email } })
+  if (user && user.isActive && !user.emailVerifiedAt) {
+    await emailVerification.sendCodeIfAllowed(user)
+  }
 }
 
 const roleNames = { admin: 'an admin', lecturer: 'a lecturer', student: 'a student' }
@@ -74,7 +103,16 @@ async function login({ email, password, role }) {
     )
   }
 
+  // The password is right but the email isn't verified yet: send a fresh code and say so
+  if (!user.emailVerifiedAt) {
+    await emailVerification.sendCodeIfAllowed(user)
+    throw new HttpError(403, 'Please verify your email first. We\'ve sent you a code.', {
+      reason: 'email_not_verified',
+      email: user.email,
+    })
+  }
+
   return { user: toPublicUser(user), token: signToken(user) }
 }
 
-module.exports = { createUser, registerStudent, login, signToken }
+module.exports = { createUser, registerStudent, verifyEmail, resendCode, login, signToken }

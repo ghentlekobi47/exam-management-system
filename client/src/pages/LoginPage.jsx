@@ -103,6 +103,13 @@ export function LoginPage() {
       storeTab(role)
       navigate(goTo, { replace: true })
     } catch (err) {
+      // Right password, but the email isn't verified yet: go and enter the code
+      if (err.details?.reason === 'email_not_verified') {
+        navigate(`/verify-email?email=${encodeURIComponent(err.details.email)}`, {
+          state: { notice: 'Please verify your email first. We sent a code to your inbox.' },
+        })
+        return
+      }
       setError(err)
       setBusy(false)
     }

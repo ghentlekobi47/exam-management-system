@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { api } from '../../lib/api'
-import { fieldError, formError } from '../../lib/errors'
+import { fieldError, focusFirstInvalid, summaryMessage } from '../../lib/errors'
 import { Dialog, DialogActions } from '../Dialog'
-import { Alert, Button, TextField } from '../ui'
+import { Button, TextField } from '../ui'
 
 const FIELDS = ['text', 'points', 'options', 'correctAnswer']
 const MIN_OPTIONS = 2
@@ -43,6 +43,7 @@ export function QuestionFormDialog({ examId, question, onClose, onSaved }) {
   const [form, setForm] = useState(() => initialForm(question))
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
+  const formRef = useRef(null)
 
   const setField = (name, value) => setForm((current) => ({ ...current, [name]: value }))
 
@@ -85,13 +86,13 @@ export function QuestionFormDialog({ examId, question, onClose, onSaved }) {
     } catch (err) {
       setError(err)
       setBusy(false)
+      focusFirstInvalid(formRef.current)
     }
   }
 
   return (
     <Dialog title={question ? 'Edit question' : 'Add a question'} onClose={onClose} busy={busy} wide>
-      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-        {formError(error, FIELDS) && <Alert>{formError(error, FIELDS)}</Alert>}
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-6" noValidate>
 
         <fieldset>
           <legend className="mb-2 text-sm font-semibold text-ink">Question type</legend>
@@ -213,7 +214,12 @@ export function QuestionFormDialog({ examId, question, onClose, onSaved }) {
           </fieldset>
         )}
 
-        <DialogActions busy={busy} submitLabel={question ? 'Save question' : 'Add question'} onCancel={onClose} />
+        <DialogActions
+          busy={busy}
+          submitLabel={question ? 'Save question' : 'Add question'}
+          onCancel={onClose}
+          error={summaryMessage(error, FIELDS)}
+        />
       </form>
     </Dialog>
   )

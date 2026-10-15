@@ -1,9 +1,21 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { api } from '../../lib/api'
-import { fieldError, formError } from '../../lib/errors'
-import { formatDateTime, formatSpan, fromDateAndTime, toDateAndTime } from '../../lib/format'
+import { fieldError, focusFirstInvalid, summaryMessage } from '../../lib/errors'
+import { formatSpan, fromDateAndTime, toDateAndTime } from '../../lib/format'
 import { Dialog, DialogActions } from '../Dialog'
-import { Alert, Checkbox, TextField } from '../ui'
+import { Checkbox, TextField } from '../ui'
+
+// Fields tucked away under "More options"
+const MORE_FIELDS = ['instructions', 'maxAttempts', 'passMark']
+
+// Same limits as the server
+const TITLE_MAX = 200
+const INSTRUCTIONS_MAX = 5000
+
+const isWholeNumberBetween = (text, min, max) => {
+  const value = Number(text)
+  return text !== '' && Number.isInteger(value) && value >= min && value <= max
+}
 
 const FIELDS = ['title', 'instructions', 'durationMinutes', 'startAt', 'endAt', 'maxAttempts', 'passMark']
 const HOUR = 60 * 60 * 1000
@@ -51,6 +63,13 @@ export function ExamFormDialog({ courseId, exam, onClose, onSaved }) {
   const [error, setError] = useState(null)
   const [localError, setLocalError] = useState({})
   const [busy, setBusy] = useState(false)
+  const formRef = useRef(null)
+  // When editing, show the extra settings straight away if any of them were changed
+  const [showMore, setShowMore] = useState(
+    () =>
+      Boolean(exam) &&
+      (Boolean(exam.instructions) || exam.maxAttempts !== 1 || exam.passMark !== 50 || exam.shuffleQuestions),
+  )
 
   const update = (event) => {
     const { name, value, type, checked } = event.target
@@ -64,13 +83,31 @@ export function ExamFormDialog({ courseId, exam, onClose, onSaved }) {
   async function handleSubmit(event) {
     event.preventDefault()
 
-    // Catch schedule mistakes before sending, with messages next to the right fields
+    // Catch common mistakes before sending, with messages next to the right fields
     const problems = {}
+    if (form.title.trim().length < 2) problems.title = 'Give the exam a title (at least 2 characters)'
+    if (form.title.trim().length > TITLE_MAX) {
+      problems.title = `Keep the title under ${TITLE_MAX} characters (it has ${form.title.trim().length})`
+    }
+    if (form.instructions.trim().length > INSTRUCTIONS_MAX) {
+      problems.instructions = `Instructions can be up to ${INSTRUCTIONS_MAX.toLocaleString()} characters (they have ${form.instructions.trim().length.toLocaleString()}). Put questions in the Questions section instead.`
+    }
     if (!startAt) problems.startAt = 'Choose the opening date and time'
     if (!endAt) problems.endAt = 'Choose the closing date and time'
     if (startAt && endAt && endAt <= startAt) problems.endAt = 'The exam must close after it opens'
+    if (!isWholeNumberBetween(form.durationMinutes, 1, 600)) {
+      problems.durationMinutes = 'Enter a whole number of minutes from 1 to 600'
+    }
+    if (!isWholeNumberBetween(form.maxAttempts, 1, 10)) problems.maxAttempts = 'Enter a whole number from 1 to 10'
+    if (form.passMark !== '' && !(Number(form.passMark) >= 0 && Number(form.passMark) <= 100)) {
+      problems.passMark = 'Enter a percentage from 0 to 100, or leave it empty'
+    }
     setLocalError(problems)
-    if (Object.keys(problems).length > 0) return
+    if (Object.keys(problems).length > 0) {
+      setError(null)
+      focusFirstInvalid(formRef.current)
+      return
+    }
 
     setBusy(true)
     setError(null)
@@ -92,41 +129,34 @@ export function ExamFormDialog({ courseId, exam, onClose, onSaved }) {
     } catch (err) {
       setError(err)
       setBusy(false)
+      focusFirstInvalid(formRef.current)
     }
   }
 
-  const startError = localError.startAt ?? fieldError(error, 'startAt')
-  const endError = localError.endAt ?? fieldError(error, 'endAt')
+  // One message per field, whether the problem was found here or by the server
+  const errorFor = (name) => localError[name] ?? fieldError(error, name)
+  const startError = errorFor('startAt')
+  const endError = errorFor('endAt')
   const windowMinutes = startAt && endAt && endAt > startAt ? (endAt - startAt) / 60000 : null
+
+  // "More options" opens by itself when one of its fields has a problem
+  const moreHasError = MORE_FIELDS.some((name) => errorFor(name))
+  const moreOpen = showMore || moreHasError
 
   return (
     <Dialog title={exam ? 'Edit exam details' : 'New exam'} onClose={onClose} busy={busy} wide>
-      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-        {formError(error, FIELDS) && <Alert>{formError(error, FIELDS)}</Alert>}
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-5" noValidate>
+        <TextField
+          label="Title"
+          name="title"
+          value={form.title}
+          onChange={update}
+          placeholder="Mid-semester quiz"
+          error={errorFor('title')}
+          autoFocus
+        />
 
-        <Section title="About the exam">
-          <TextField
-            label="Title"
-            name="title"
-            value={form.title}
-            onChange={update}
-            placeholder="Mid-semester quiz"
-            error={fieldError(error, 'title')}
-            autoFocus
-          />
-          <TextField
-            as="textarea"
-            label="Instructions for students (optional)"
-            name="instructions"
-            rows={3}
-            value={form.instructions}
-            onChange={update}
-            placeholder="Answer all questions. Calculators are not allowed."
-            error={fieldError(error, 'instructions')}
-          />
-        </Section>
-
-        <Section title="Schedule" description="When students can start the exam, and how long each student gets once they start.">
+        <div className="grid gap-4 sm:grid-cols-2">
           <DateTimeRow
             label="Opens"
             prefix="start"
@@ -143,75 +173,97 @@ export function ExamFormDialog({ courseId, exam, onClose, onSaved }) {
             onChange={update}
             error={endError}
           />
+        </div>
+
+        <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
           <TextField
-            label="Time allowed per student (minutes)"
+            label="Time allowed (minutes)"
             name="durationMinutes"
             type="number"
             min="1"
             max="600"
             value={form.durationMinutes}
             onChange={update}
-            error={fieldError(error, 'durationMinutes')}
-            className="sm:max-w-xs"
+            error={errorFor('durationMinutes')}
+            className="w-44"
           />
-
           {windowMinutes !== null && duration > 0 && (
-            <p className="rounded-md bg-paper px-4 py-3 text-sm text-ink" aria-live="polite">
-              Students can start any time from <b>{formatDateTime(startAt)}</b> to <b>{formatDateTime(endAt)}</b>{' '}
-              (open for {formatSpan(windowMinutes)}). Each student gets <b>{formatSpan(duration)}</b>
-              {duration > windowMinutes
-                ? ', but no one can go past the closing time.'
-                : ', ending early if the exam closes first.'}
+            <p className="pb-3 text-sm text-ink-soft" aria-live="polite">
+              Open for {formatSpan(windowMinutes)} · {formatSpan(duration)} per student
             </p>
           )}
-        </Section>
+        </div>
 
-        <Section title="Marking and attempts">
-          <div className="grid gap-5 sm:grid-cols-2">
-            <TextField
-              label="Attempts allowed"
-              name="maxAttempts"
-              type="number"
-              min="1"
-              max="10"
-              value={form.maxAttempts}
-              onChange={update}
-              error={fieldError(error, 'maxAttempts')}
-            />
-            <TextField
-              label="Pass mark (%)"
-              name="passMark"
-              type="number"
-              min="0"
-              max="100"
-              value={form.passMark}
-              onChange={update}
-              hint="Leave empty for no pass mark."
-              error={fieldError(error, 'passMark')}
-            />
-          </div>
-          <Checkbox
-            label="Shuffle questions"
-            hint="Each student gets the questions in a different order."
-            name="shuffleQuestions"
-            checked={form.shuffleQuestions}
-            onChange={update}
-          />
-        </Section>
+        <div className="border-t border-rule pt-4">
+          <button
+            type="button"
+            onClick={() => setShowMore(!moreOpen)}
+            aria-expanded={moreOpen}
+            aria-controls="exam-more-options"
+            className="flex w-full items-center justify-between rounded-md text-left text-sm font-semibold text-ink hover:text-ink/80"
+          >
+            <span>
+              More options <span className="font-normal text-ink-soft">(instructions, attempts, pass mark)</span>
+            </span>
+            <span aria-hidden="true" className={`transition-transform ${moreOpen ? 'rotate-180' : ''}`}>
+              ▾
+            </span>
+          </button>
 
-        <DialogActions busy={busy} submitLabel={exam ? 'Save changes' : 'Create exam'} onCancel={onClose} />
+          {moreOpen && (
+            <div id="exam-more-options" className="mt-4 space-y-4">
+              <TextField
+                as="textarea"
+                label="Instructions for students (optional)"
+                name="instructions"
+                rows={2}
+                value={form.instructions}
+                onChange={update}
+                placeholder="Answer all questions. Calculators are not allowed."
+                error={errorFor('instructions')}
+              />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <TextField
+                  label="Attempts allowed"
+                  name="maxAttempts"
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={form.maxAttempts}
+                  onChange={update}
+                  error={errorFor('maxAttempts')}
+                />
+                <TextField
+                  label="Pass mark (%)"
+                  name="passMark"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={form.passMark}
+                  onChange={update}
+                  placeholder="None"
+                  error={errorFor('passMark')}
+                />
+              </div>
+              <Checkbox
+                label="Shuffle questions"
+                hint="Each student gets the questions in a different order."
+                name="shuffleQuestions"
+                checked={form.shuffleQuestions}
+                onChange={update}
+              />
+            </div>
+          )}
+        </div>
+
+        <DialogActions
+          busy={busy}
+          submitLabel={exam ? 'Save changes' : 'Create exam'}
+          onCancel={onClose}
+          error={summaryMessage(error, FIELDS, Object.keys(localError).length > 0)}
+        />
       </form>
     </Dialog>
-  )
-}
-
-function Section({ title, description, children }) {
-  return (
-    <fieldset className="space-y-4 rounded-lg border border-rule p-5">
-      <legend className="px-2 text-sm font-semibold uppercase tracking-wider text-ink-soft">{title}</legend>
-      {description && <p className="-mt-1 text-sm text-ink-soft">{description}</p>}
-      {children}
-    </fieldset>
   )
 }
 
@@ -224,7 +276,7 @@ function DateTimeRow({ label, prefix, date, time, onChange, error }) {
       <p className="text-sm font-semibold text-ink" id={`${prefix}-schedule-label`}>
         {label}
       </p>
-      <div className="grid grid-cols-[1fr_8.5rem] gap-3" role="group" aria-labelledby={`${prefix}-schedule-label`}>
+      <div className="grid grid-cols-[1fr_7.5rem] gap-2" role="group" aria-labelledby={`${prefix}-schedule-label`}>
         <div>
           <label htmlFor={`${prefix}Date`} className="sr-only">
             {label} date

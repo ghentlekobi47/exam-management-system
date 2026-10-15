@@ -22,8 +22,12 @@ export function RegisterPage() {
     setBusy(true)
     setError(null)
     try {
-      await register(form)
-      navigate('/', { replace: true })
+      const { email, emailSent } = await register(form)
+      navigate(`/verify-email?email=${encodeURIComponent(email)}`, {
+        state: emailSent
+          ? null
+          : { notice: "Your account was created, but we couldn't send the email. Wait a minute, then send a new code." },
+      })
     } catch (err) {
       setError(err)
       setBusy(false)

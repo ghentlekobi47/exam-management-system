@@ -19,4 +19,11 @@ const loginSchema = z.object({
   role: z.enum(['admin', 'lecturer', 'student']).optional(),
 })
 
-module.exports = { registerSchema, loginSchema }
+const verifyEmailSchema = z.object({
+  email,
+  code: z.string().trim().regex(/^\d{6}$/, 'Enter the 6-digit code from the email'),
+})
+
+const resendCodeSchema = z.object({ email })
+
+module.exports = { registerSchema, loginSchema, verifyEmailSchema, resendCodeSchema }
