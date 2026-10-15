@@ -115,4 +115,31 @@ async function login({ email, password, role }) {
   return { user: toPublicUser(user), token: signToken(user) }
 }
 
-module.exports = { createUser, registerStudent, verifyEmail, resendCode, login, signToken }
+async function updateProfile(user, { fullName }) {
+  await user.update({ fullName })
+  return toPublicUser(user)
+}
+
+async function changePassword(user, { currentPassword, newPassword }) {
+  const withPassword = await User.scope('withPassword').findByPk(user.id)
+
+  // 400, not 401: a wrong current password shouldn't sign the user out
+  if (!(await bcrypt.compare(currentPassword, withPassword.passwordHash))) {
+    throw new HttpError(400, 'Your current password is wrong', {
+      currentPassword: ['Your current password is wrong'],
+    })
+  }
+
+  await withPassword.update({ passwordHash: await hashPassword(newPassword) })
+}
+
+module.exports = {
+  createUser,
+  registerStudent,
+  verifyEmail,
+  resendCode,
+  login,
+  signToken,
+  updateProfile,
+  changePassword,
+}

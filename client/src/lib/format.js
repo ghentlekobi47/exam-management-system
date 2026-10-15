@@ -10,6 +10,13 @@ export function formatDateTime(value) {
   return value ? dateTime.format(new Date(value)) : ''
 }
 
+const dateOnly = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'long', year: 'numeric' })
+
+// "15 October 2026"
+export function formatDate(value) {
+  return value ? dateOnly.format(new Date(value)) : ''
+}
+
 export function formatMinutes(minutes) {
   if (minutes < 60) return `${minutes} min`
   const hours = Math.floor(minutes / 60)
@@ -52,6 +59,18 @@ export function formatSpan(totalMinutes) {
   const part = (n, word) => (n ? `${n} ${word}${n === 1 ? '' : 's'}` : null)
   return [part(days, 'day'), part(hours, 'hour'), part(minutes, 'minute')].filter(Boolean).join(' ') || '0 minutes'
 }
+
+// "Benjamin Kobi" -> "BK"
+export function initials(name) {
+  return (name ?? '')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0].toUpperCase())
+    .join('')
+}
+
+export const roleLabels = { admin: 'Admin', lecturer: 'Lecturer', student: 'Student' }
 
 export function formatPoints(points) {
   return `${points} ${points === 1 ? 'pt' : 'pts'}`

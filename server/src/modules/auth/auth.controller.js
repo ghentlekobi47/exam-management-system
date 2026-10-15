@@ -25,4 +25,13 @@ function me(req, res) {
   res.status(200).json({ user: req.user })
 }
 
-module.exports = { register, verifyEmail, resendCode, login, me }
+async function updateMe(req, res) {
+  res.status(200).json({ user: await authService.updateProfile(req.user, req.body) })
+}
+
+async function changePassword(req, res) {
+  await authService.changePassword(req.user, req.body)
+  res.status(200).json({ message: 'Your password was changed.' })
+}
+
+module.exports = { register, verifyEmail, resendCode, login, me, updateMe, changePassword }

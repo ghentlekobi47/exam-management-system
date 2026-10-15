@@ -8,6 +8,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { ExamPage } from './pages/ExamPage'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { ProfilePage } from './pages/ProfilePage'
 import { RegisterPage } from './pages/RegisterPage'
 import { ResultsPage } from './pages/ResultsPage'
 import { VerifyEmailPage } from './pages/VerifyEmailPage'
@@ -25,6 +26,7 @@ function App() {
           <Route path="courses/:courseId" element={<CoursePage />} />
           <Route path="exams/:examId" element={<ExamPage />} />
           <Route path="attempts/:attemptId" element={<AttemptPage />} />
+          <Route path="profile" element={<ProfilePage />} />
           <Route element={<ProtectedRoute roles={['student']} />}>
             <Route path="results" element={<ResultsPage />} />
           </Route>

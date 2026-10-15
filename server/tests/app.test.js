@@ -96,6 +96,22 @@ test('verify-email needs a 6-digit code and resend-code needs an email', async (
   assert.equal(badEmail.status, 400)
 })
 
+test('profile changes require a token', async () => {
+  const update = await fetch(`${baseUrl}/api/auth/me`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fullName: 'New Name' }),
+  })
+  const password = await fetch(`${baseUrl}/api/auth/change-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ currentPassword: 'a', newPassword: 'abcdefgh' }),
+  })
+
+  assert.equal(update.status, 401)
+  assert.equal(password.status, 401)
+})
+
 test('GET /api/auth/me without a token returns 401', async () => {
   const response = await fetch(`${baseUrl}/api/auth/me`)
 

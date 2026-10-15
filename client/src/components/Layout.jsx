@@ -1,11 +1,10 @@
 import { Link, NavLink, Outlet } from 'react-router'
 import { useAuth } from '../auth/useAuth'
 import { Logo } from './Logo'
-
-const roleLabels = { admin: 'Admin', lecturer: 'Lecturer', student: 'Student' }
+import { ProfileMenu } from './ProfileMenu'
 
 export function Layout() {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -24,25 +23,7 @@ export function Layout() {
             </nav>
           </div>
 
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="hidden text-right sm:block">
-              <p className="text-sm font-semibold leading-tight text-ink">{user.fullName}</p>
-              <p className="font-mono text-[11px] uppercase tracking-wider text-ink-soft">{roleLabels[user.role]}</p>
-            </div>
-            <span
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-rule bg-sheet font-display text-sm font-semibold text-ink"
-              aria-hidden="true"
-            >
-              {initials(user.fullName)}
-            </span>
-            <button
-              type="button"
-              onClick={logout}
-              className="rounded-md px-3 py-2 text-sm font-semibold text-ink-soft hover:bg-paper-deep hover:text-ink"
-            >
-              Log out
-            </button>
-          </div>
+          <ProfileMenu />
         </div>
       </header>
 
@@ -73,11 +54,3 @@ function NavItem({ to, end, children }) {
   )
 }
 
-function initials(name) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0].toUpperCase())
-    .join('')
-}

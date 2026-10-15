@@ -93,9 +93,12 @@ export function AuthProvider({ children }) {
 
   const resendCode = useCallback((email) => api('/auth/resend-code', { method: 'POST', body: { email } }), [])
 
+  // After the user edits their own profile, show the new details everywhere straight away
+  const updateUser = useCallback((nextUser) => setUser(nextUser), [])
+
   const value = useMemo(
-    () => ({ user, status, login, register, verifyEmail, resendCode, logout }),
-    [user, status, login, register, verifyEmail, resendCode, logout],
+    () => ({ user, status, login, register, verifyEmail, resendCode, logout, updateUser }),
+    [user, status, login, register, verifyEmail, resendCode, logout, updateUser],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

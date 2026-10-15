@@ -26,4 +26,25 @@ const verifyEmailSchema = z.object({
 
 const resendCodeSchema = z.object({ email })
 
-module.exports = { registerSchema, loginSchema, verifyEmailSchema, resendCodeSchema }
+const updateProfileSchema = z.object({
+  fullName: registerSchema.shape.fullName,
+})
+
+const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Enter your current password'),
+    newPassword: registerSchema.shape.password,
+  })
+  .refine((data) => data.newPassword !== data.currentPassword, {
+    message: 'Choose a password different from your current one',
+    path: ['newPassword'],
+  })
+
+module.exports = {
+  registerSchema,
+  loginSchema,
+  verifyEmailSchema,
+  resendCodeSchema,
+  updateProfileSchema,
+  changePasswordSchema,
+}
