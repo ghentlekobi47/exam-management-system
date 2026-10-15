@@ -1,0 +1,16 @@
+{
+  "name": "campusiq",
+  "private": true,
+  "description": "CampusIQ online exams: runs the API (server/) and the website (client/) together",
+  "scripts": {
+    "dev": "concurrently --names api,web --prefix-colors blue,magenta \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install",
+    "test": "npm --prefix server test",
+    "lint": "npm --prefix client run lint"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  }
+}

@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+/* CampusIQ design tokens */
+@theme {
+  --color-paper: #f4f5f7;
+  --color-paper-deep: #eceef2;
+  --color-sheet: #ffffff;
+  --color-ink: #1f2a44;
+  --color-ink-soft: #5b6478;
+  --color-rule: #e1e4ea;
+  --color-marker: #c0392b;
+  --color-pass: #2f6b4f;
+  --color-highlight: #f7e37a;
+
+  --font-display: "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+
+  --shadow-sheet: 0 1px 2px rgb(31 42 68 / 0.06), 0 12px 32px -12px rgb(31 42 68 / 0.22);
+}
+
+@layer base {
+  html {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    min-height: 100vh;
+    position: relative;
+    isolation: isolate;
+  }
+
+  /* The exam photo, faded far back behind every page so content stays easy to read */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      linear-gradient(rgb(244 245 247 / 0.9), rgb(244 245 247 / 0.95)),
+      url("/images/exam-bg.jpg") center / cover no-repeat;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--color-highlight);
+  }
+}
+
+@layer components {
+  /* The red margin line down the left of an exam sheet */
+  .margin-line {
+    position: relative;
+  }
+  .margin-line::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 3rem;
+    width: 1.5px;
+    background-color: rgb(192 57 43 / 0.45);
+  }
+  @media (min-width: 640px) {
+    .margin-line::before {
+      left: 4rem;
+    }
+  }
+
+  /* Yellow highlighter swipe behind a chosen answer */
+  .highlighted {
+    background-image: linear-gradient(
+      100deg,
+      transparent 0.2em,
+      rgb(247 227 122 / 0.85) 0.4em,
+      rgb(247 227 122 / 0.75) calc(100% - 0.4em),
+      transparent calc(100% - 0.2em)
+    );
+    background-size: 100% 70%;
+    background-position: 0 70%;
+    background-repeat: no-repeat;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+}
+
+@keyframes clock-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.clock-urgent {
+  animation: clock-pulse 1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clock-urgent {
+    animation: none;
+  }
+}

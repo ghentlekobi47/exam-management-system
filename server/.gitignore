@@ -1,0 +1,8 @@
+node_modules/
+npm-debug.log*
+*.log
+
+# Real settings (database password, JWT secret) never go to git; the template does
+.env
+.env.*
+!.env.example

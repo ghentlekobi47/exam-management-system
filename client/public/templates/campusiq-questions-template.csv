@@ -1,0 +1,5 @@
+type,question,points,option_a,option_b,option_c,option_d,option_e,option_f,correct
+multiple_choice,Which of these is an input device?,2,Monitor,Keyboard,Printer,Speaker,,,B
+true_false,The CPU is often called the brain of the computer.,1,,,,,,,TRUE
+multiple_choice,How many bits are in one byte?,1,4,8,16,,,,B
+true_false,RAM keeps its data when the computer is switched off.,1,,,,,,,FALSE

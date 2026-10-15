@@ -1,0 +1,48 @@
+# Files git should never upload. These rules apply to every folder in the project.
+
+# ---- Secrets: environment files ----
+# Real settings (database password, JWT secret) live in .env files and stay on your computer.
+# The .env.example templates (no secrets) ARE committed so others know what to fill in.
+.env
+.env.*
+!.env.example
+
+# ---- Secrets: keys and certificates ----
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+id_rsa*
+
+# ---- Database dumps and local database files ----
+# Tables are created with migrations (server/src/database/migrations), so no .sql files are needed here.
+*.sql
+*.sql.gz
+*.sqlite
+*.sqlite3
+*.db
+
+# ---- Installed packages and build output (anyone can recreate these) ----
+node_modules/
+dist/
+dist-ssr/
+build/
+coverage/
+
+# ---- Logs ----
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---- Editor and operating system files ----
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.suo
