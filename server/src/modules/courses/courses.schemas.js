@@ -5,12 +5,14 @@ const courseFields = {
   code: z.string().trim().toUpperCase().min(2, 'Course code is too short').max(20),
   title: z.string().trim().min(2, 'Title is too short').max(200),
   description: z.string().trim().max(5000).nullable(),
-  lecturerId: z.number().int().positive(),
+  // null means no lecturer yet
+  lecturerId: z.number().int().positive().nullable(),
 }
 
 const createCourseSchema = z.object({
   ...courseFields,
   description: courseFields.description.optional(),
+  lecturerId: courseFields.lecturerId.optional(),
 })
 
 const updateCourseSchema = z

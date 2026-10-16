@@ -55,7 +55,9 @@ function assertCanManageCourse(course, user) {
 }
 
 async function createCourse(data) {
-  await assertActiveLecturer(data.lecturerId)
+  if (data.lecturerId) {
+    await assertActiveLecturer(data.lecturerId)
+  }
   await assertCodeAvailable(data.code)
 
   const course = await Course.create(data)
