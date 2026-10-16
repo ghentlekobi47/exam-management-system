@@ -147,4 +147,5 @@ module.exports = {
   signToken,
   updateProfile,
   changePassword,
+  hashPassword,
 }
