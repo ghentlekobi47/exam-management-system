@@ -32,7 +32,8 @@ export function CourseFormDialog({ course, onClose, onSaved }) {
         code: form.code,
         title: form.title,
         description: form.description.trim() || null,
-        lecturerId: Number(form.lecturerId) || undefined,
+        // Empty choice: no lecturer yet, the admin can assign one later
+        lecturerId: Number(form.lecturerId) || null,
       }
       const result = course
         ? await api(`/courses/${course.id}`, { method: 'PATCH', body })
@@ -81,24 +82,29 @@ export function CourseFormDialog({ course, onClose, onSaved }) {
 
         {lecturers.loading ? (
           <Spinner small label="Loading lecturers…" />
-        ) : activeLecturers.length === 0 ? (
-          <Alert tone="info">There are no active lecturers yet. Add one on the Users page first.</Alert>
         ) : (
-          <TextField
-            as="select"
-            label="Lecturer"
-            name="lecturerId"
-            value={form.lecturerId}
-            onChange={update}
-            error={fieldError(error, 'lecturerId') && (form.lecturerId ? fieldError(error, 'lecturerId') : 'Choose a lecturer')}
-          >
-            <option value="">Choose a lecturer…</option>
-            {activeLecturers.map((lecturer) => (
-              <option key={lecturer.id} value={lecturer.id}>
-                {lecturer.fullName} ({lecturer.email})
-              </option>
-            ))}
-          </TextField>
+          <div className="space-y-3">
+            <TextField
+              as="select"
+              label="Lecturer (optional)"
+              name="lecturerId"
+              value={form.lecturerId}
+              onChange={update}
+              error={fieldError(error, 'lecturerId')}
+            >
+              <option value="">No lecturer yet</option>
+              {activeLecturers.map((lecturer) => (
+                <option key={lecturer.id} value={lecturer.id}>
+                  {lecturer.fullName} ({lecturer.email})
+                </option>
+              ))}
+            </TextField>
+            {activeLecturers.length === 0 && (
+              <Alert tone="info">
+                No lecturers yet. You can create the course now and assign one later from Edit course.
+              </Alert>
+            )}
+          </div>
         )}
 
         <DialogActions
