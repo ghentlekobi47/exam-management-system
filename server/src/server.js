@@ -23,6 +23,8 @@ async function start() {
     }
 
     console.log(`CampusIQ API listening on port ${env.PORT}`)
+    // Not secret; quoted so stray spaces or hidden characters from copy-paste show up
+    console.log(`[cors] Allowed websites: ${env.clientOrigins.map((origin) => JSON.stringify(origin)).join(', ')}`)
   })
 
   const shutdown = () => {
