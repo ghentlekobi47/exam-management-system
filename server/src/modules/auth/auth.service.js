@@ -130,7 +130,12 @@ async function changePassword(user, { currentPassword, newPassword }) {
     })
   }
 
-  await withPassword.update({ passwordHash: await hashPassword(newPassword) })
+  // Recording the time signs out every other device; this device gets a fresh token.
+  // Whole seconds, because MySQL would round 12:00:12.7 up to 12:00:13 and reject the fresh token.
+  const changedAt = new Date(Math.floor(Date.now() / 1000) * 1000)
+  await withPassword.update({ passwordHash: await hashPassword(newPassword), passwordChangedAt: changedAt })
+  await user.reload()
+  return { user: toPublicUser(user), token: signToken(user) }
 }
 
 module.exports = {
@@ -142,4 +147,5 @@ module.exports = {
   signToken,
   updateProfile,
   changePassword,
+  hashPassword,
 }

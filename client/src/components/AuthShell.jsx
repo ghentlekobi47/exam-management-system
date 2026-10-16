@@ -1,4 +1,5 @@
 import { Logo } from './Logo'
+import { ServerWakeNotice } from './ServerWakeNotice'
 
 // Split screen for login and register: the exam photo on one side, the form on the other
 export function AuthShell({ title, subtitle, children, footer, beforeTitle }) {
@@ -53,6 +54,7 @@ export function AuthShell({ title, subtitle, children, footer, beforeTitle }) {
           <div className="mb-10 lg:hidden">
             <Logo />
           </div>
+          <ServerWakeNotice />
           {beforeTitle}
           <h1 className="text-3xl font-semibold text-ink">{title}</h1>
           {subtitle && <p className="mt-2 text-ink-soft">{subtitle}</p>}

@@ -24,6 +24,12 @@ async function authenticate(req, _res, next) {
     throw new HttpError(401, 'Invalid or expired token')
   }
 
+  // After a password change, older sign-ins on other devices stop working.
+  // Tokens record their time in whole seconds, so compare in seconds.
+  if (user.passwordChangedAt && payload.iat < Math.floor(user.passwordChangedAt.getTime() / 1000)) {
+    throw new HttpError(401, 'Your password was changed. Please sign in again.')
+  }
+
   req.user = user
   next()
 }
