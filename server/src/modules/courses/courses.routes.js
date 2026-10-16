@@ -20,6 +20,10 @@ router.use(authenticate)
 // Courses: admins manage them; everyone sees the courses that apply to them
 router.post('/', authorize('admin'), validate(createCourseSchema), courses.create)
 router.get('/', courses.list)
+// Students browse all courses and join or drop them (before '/:id' so "catalog" isn't read as an id)
+router.get('/catalog', authorize('student'), courses.catalog)
+router.post('/:id/enroll', authorize('student'), validate(idParams, 'params'), courses.join)
+router.delete('/:id/enroll', authorize('student'), validate(idParams, 'params'), courses.leave)
 router.get('/:id', validate(idParams, 'params'), courses.getOne)
 router.patch(
   '/:id',

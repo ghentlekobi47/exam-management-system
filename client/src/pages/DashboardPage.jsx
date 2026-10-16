@@ -3,10 +3,10 @@ import { Link, useNavigate } from 'react-router'
 import { useAuth } from '../auth/useAuth'
 import { useApi } from '../lib/useApi'
 import { CourseFormDialog } from '../components/forms/CourseFormDialog'
-import { Button, EmptyState, ErrorBlock, LoadingBlock, PageHeader } from '../components/ui'
+import { Button, ButtonLink, EmptyState, ErrorBlock, LoadingBlock, PageHeader } from '../components/ui'
 
 const emptyMessages = {
-  student: 'You are not enrolled in any courses yet. Your lecturer or an admin will add you.',
+  student: 'You haven’t selected any courses yet. Use “Browse courses” to pick yours.',
   lecturer: 'You are not teaching any courses yet. An admin assigns courses to lecturers.',
   admin: 'There are no courses yet. Create the first one with “New course”.',
 }
@@ -24,6 +24,7 @@ export function DashboardPage() {
     <>
       <PageHeader eyebrow={eyebrow} title={`Hello, ${firstName}`}>
         {isAdmin && <Button onClick={() => setCreating(true)}>+ New course</Button>}
+        {user.role === 'student' && <ButtonLink to="/courses/browse">+ Browse courses</ButtonLink>}
       </PageHeader>
 
       {creating && (

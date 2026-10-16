@@ -1,5 +1,5 @@
 const { ForeignKeyConstraintError } = require('sequelize')
-const { Course, Enrollment, User } = require('../../models')
+const { Course, Enrollment, ExamAttempt, User } = require('../../models')
 const HttpError = require('../../utils/httpError')
 
 const lecturerInclude = { association: 'lecturer', attributes: ['id', 'fullName', 'email'] }
@@ -147,7 +147,56 @@ async function unenrollStudent(course, studentId) {
   }
 }
 
+// Every course, each marked with whether this student has already joined it
+async function listCatalog(student) {
+  const [courses, enrollments] = await Promise.all([
+    Course.findAll({ include: [lecturerInclude], order: [['code', 'ASC']] }),
+    Enrollment.findAll({ where: { studentId: student.id }, attributes: ['courseId'] }),
+  ])
+  const joined = new Set(enrollments.map((enrollment) => enrollment.courseId))
+
+  return courses.map((course) => ({ ...course.toJSON(), enrolled: joined.has(course.id) }))
+}
+
+async function selfEnroll(courseId, student) {
+  const course = await Course.findByPk(courseId)
+
+  if (!course) {
+    throw new HttpError(404, 'Course not found')
+  }
+
+  const existing = await Enrollment.findOne({ where: { courseId, studentId: student.id } })
+  if (existing) {
+    throw new HttpError(409, 'You are already enrolled in this course')
+  }
+
+  await Enrollment.create({ courseId, studentId: student.id })
+  return findCourseWithLecturer(courseId)
+}
+
+// Students may drop a course until they start an exam in it, so results stay safe
+async function selfUnenroll(courseId, student) {
+  const enrollment = await Enrollment.findOne({ where: { courseId, studentId: student.id } })
+
+  if (!enrollment) {
+    throw new HttpError(404, 'You are not enrolled in this course')
+  }
+
+  const attempts = await ExamAttempt.count({
+    where: { studentId: student.id },
+    include: [{ association: 'exam', where: { courseId }, attributes: [] }],
+  })
+  if (attempts > 0) {
+    throw new HttpError(409, 'You have already started an exam in this course. Ask your lecturer or an admin to remove you.')
+  }
+
+  await enrollment.destroy()
+}
+
 module.exports = {
+  listCatalog,
+  selfEnroll,
+  selfUnenroll,
   findCourseForUser,
   canManageCourse,
   assertCanManageCourse,

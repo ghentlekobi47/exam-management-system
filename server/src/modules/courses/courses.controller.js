@@ -50,4 +50,32 @@ async function unenrollStudent(req, res) {
   res.status(204).end()
 }
 
-module.exports = { create, list, getOne, update, remove, listStudents, enrollStudent, unenrollStudent }
+// Students choose their own courses
+async function catalog(req, res) {
+  const courses = await coursesService.listCatalog(req.user)
+  res.status(200).json({ courses })
+}
+
+async function join(req, res) {
+  const course = await coursesService.selfEnroll(req.params.id, req.user)
+  res.status(201).json({ course })
+}
+
+async function leave(req, res) {
+  await coursesService.selfUnenroll(req.params.id, req.user)
+  res.status(204).end()
+}
+
+module.exports = {
+  create,
+  list,
+  getOne,
+  update,
+  remove,
+  listStudents,
+  enrollStudent,
+  unenrollStudent,
+  catalog,
+  join,
+  leave,
+}

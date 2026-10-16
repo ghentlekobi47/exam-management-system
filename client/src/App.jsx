@@ -3,6 +3,7 @@ import { Layout } from './components/Layout'
 import { UsersPage } from './pages/admin/UsersPage'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AttemptPage } from './pages/AttemptPage'
+import { CatalogPage } from './pages/CatalogPage'
 import { CoursePage } from './pages/CoursePage'
 import { DashboardPage } from './pages/DashboardPage'
 import { ExamPage } from './pages/ExamPage'
@@ -29,6 +30,7 @@ function App() {
           <Route path="profile" element={<ProfilePage />} />
           <Route element={<ProtectedRoute roles={['student']} />}>
             <Route path="results" element={<ResultsPage />} />
+            <Route path="courses/browse" element={<CatalogPage />} />
           </Route>
           <Route element={<ProtectedRoute roles={['admin']} />}>
             <Route path="admin/users" element={<UsersPage />} />

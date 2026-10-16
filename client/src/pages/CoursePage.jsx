@@ -28,7 +28,7 @@ export function CoursePage() {
   const course = useApi(`/courses/${courseId}`)
   const exams = useApi(`/courses/${courseId}/exams`)
   const now = useNow(30_000)
-  const [dialog, setDialog] = useState(null) // 'edit' | 'delete' | 'exam'
+  const [dialog, setDialog] = useState(null) // 'edit' | 'delete' | 'exam' | 'drop'
   const [deleteBusy, setDeleteBusy] = useState(false)
   const [error, setError] = useState(null)
 
@@ -41,6 +41,18 @@ export function CoursePage() {
   const isAdmin = user.role === 'admin'
   // Lecturers only ever see the courses they teach, so any staff member here can manage it
   const canManage = user.role !== 'student'
+
+  async function dropCourse() {
+    setDeleteBusy(true)
+    try {
+      await api(`/courses/${info.id}/enroll`, { method: 'DELETE' })
+      navigate('/', { replace: true })
+    } catch (err) {
+      setError(err)
+      setDialog(null)
+      setDeleteBusy(false)
+    }
+  }
 
   async function deleteCourse() {
     setDeleteBusy(true)
@@ -67,6 +79,11 @@ export function CoursePage() {
               Delete
             </Button>
           </>
+        )}
+        {user.role === 'student' && (
+          <Button variant="ghost" className="hover:text-marker" onClick={() => setDialog('drop')}>
+            Drop course
+          </Button>
         )}
       </PageHeader>
 
@@ -143,6 +160,20 @@ export function CoursePage() {
           onClose={() => setDialog(null)}
           onSaved={(exam) => navigate(`/exams/${exam.id}`)}
         />
+      )}
+
+      {dialog === 'drop' && (
+        <ConfirmDialog
+          title={`Drop ${info.code}?`}
+          confirmLabel="Drop course"
+          tone="danger"
+          busy={deleteBusy}
+          onCancel={() => setDialog(null)}
+          onConfirm={dropCourse}
+        >
+          You will stop seeing this course and its exams. You can join it again from Browse courses. Once you have
+          started an exam here, only your lecturer or an admin can remove you.
+        </ConfirmDialog>
       )}
 
       {dialog === 'delete' && (
