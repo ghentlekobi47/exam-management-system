@@ -5,7 +5,11 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
+    "start:prod": "sequelize-cli db:migrate && node src/server.js",
     "dev": "nodemon src/server.js",
+    "prod:migrate": "node scripts/with-prod-env.js sequelize-cli db:migrate",
+    "prod:seed": "node scripts/with-prod-env.js sequelize-cli db:seed:all",
+    "prod:create-admin": "node scripts/with-prod-env.js node scripts/create-admin.js",
     "test": "node --test",
     "create-admin": "node scripts/create-admin.js",
     "db:migrate": "sequelize-cli db:migrate",
@@ -22,14 +26,15 @@
     "dotenv": "^18.0.7",
     "express": "^5.3.0",
     "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "mysql2": "^3.24.6",
     "nodemailer": "^10.1.1",
     "sequelize": "^6.37.8",
+    "sequelize-cli": "^6.6.5",
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14",
-    "sequelize-cli": "^6.6.5"
+    "nodemon": "^3.1.14"
   }
 }

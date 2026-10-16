@@ -4,26 +4,57 @@ const env = require('../config/env')
 const settings = env.mail
 
 // Any SMTP provider (Brevo by default), created only when a login and password are set
-const transport = settings.configured
-  ? nodemailer.createTransport({
-      host: settings.host,
-      port: settings.port,
-      secure: settings.secure,
-      auth: { user: settings.user, pass: settings.password },
-    })
-  : null
+const smtpTransport =
+  settings.configured && settings.transport === 'smtp'
+    ? nodemailer.createTransport({
+        host: settings.host,
+        port: settings.port,
+        secure: settings.secure,
+        auth: { user: settings.user, pass: settings.password },
+      })
+    : null
 
-if (env.NODE_ENV === 'development') {
+if (env.NODE_ENV !== 'test') {
+  const how = settings.transport === 'brevo-api' ? "Brevo's API" : `${settings.host}:${settings.port}`
   console.log(
     settings.configured
-      ? `[mail] Sending email through ${settings.host}:${settings.port} as ${settings.from}`
-      : '[mail] Email is not set up (MAIL_USER / MAIL_PASSWORD), so codes will be printed here instead of emailed',
+      ? `[mail] Sending email through ${how} as ${settings.from}`
+      : '[mail] Email is not set up, so codes will be printed here instead of emailed',
   )
+}
+
+// Sends through Brevo's HTTPS API (https://developers.brevo.com/reference/sendtransacemail)
+async function sendWithBrevoApi({ to, subject, text, html }) {
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: { 'api-key': settings.apiKey, 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({
+      sender: { name: settings.fromName, email: settings.from },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+      textContent: text,
+    }),
+  })
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}))
+    const err = new Error(`Brevo API ${response.status}: ${body.message ?? response.statusText}`)
+    err.responseCode = response.status
+    err.response = body.message ?? ''
+    throw err
+  }
 }
 
 // Turns common provider errors into a hint about what to fix in .env
 function explainSendError(err) {
   const text = `${err.code ?? ''} ${err.responseCode ?? ''} ${err.response ?? ''} ${err.message ?? ''}`
+  if (settings.transport === 'brevo-api' && /unrecogni[sz]ed IP|authori[sz]ed IP/i.test(text)) {
+    return 'Brevo blocked this server\'s IP address. In Brevo: Settings > Security > Authorised IPs, turn off blocking of unknown IPs (hosting providers change IPs).'
+  }
+  if (settings.transport === 'brevo-api' && err.responseCode === 401) {
+    return 'Brevo rejected the API key. Check BREVO_API_KEY (Brevo: Settings > SMTP & API > API Keys).'
+  }
   if (err.code === 'EAUTH' || /\b535\b/.test(text)) {
     return 'The email login was refused. Check MAIL_USER and MAIL_PASSWORD (for Brevo, use the SMTP key, not your Brevo account password).'
   }
@@ -38,19 +69,23 @@ function explainSendError(err) {
 
 // Sends an email. Without mail settings (development only), prints it to the terminal instead.
 async function sendMail({ to, subject, text, html, devSummary }) {
-  if (!transport) {
+  if (!settings.configured) {
     console.log(`[mail] To ${to}: ${devSummary ?? subject}`)
     return
   }
 
   try {
-    await transport.sendMail({
-      from: { name: settings.fromName, address: settings.from },
-      to,
-      subject,
-      text,
-      html,
-    })
+    if (settings.transport === 'brevo-api') {
+      await sendWithBrevoApi({ to, subject, text, html })
+    } else {
+      await smtpTransport.sendMail({
+        from: { name: settings.fromName, address: settings.from },
+        to,
+        subject,
+        text,
+        html,
+      })
+    }
   } catch (err) {
     const hint = explainSendError(err)
     if (hint) console.error(`[mail] ${hint}`)

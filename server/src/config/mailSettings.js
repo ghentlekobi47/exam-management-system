@@ -27,14 +27,32 @@ function resolveMailSettings(raw) {
   // Port 465 uses a secure connection from the start; 587 upgrades it (STARTTLS)
   const secure = textToBoolean(raw.MAIL_SECURE, port === 465)
 
+  const fromName = (raw.MAIL_FROM_NAME ?? '').trim() || 'CampusIQ'
+
+  // Brevo's web API sends over HTTPS, which works on hosts that block email ports (e.g. Render's free plan)
+  const transport = (raw.MAIL_TRANSPORT ?? '').trim().toLowerCase() === 'brevo-api' ? 'brevo-api' : 'smtp'
+  if (transport === 'brevo-api') {
+    const apiKey = (raw.BREVO_API_KEY ?? '').trim()
+    return {
+      transport,
+      host: 'api.brevo.com',
+      port: 443,
+      apiKey,
+      from: (raw.MAIL_FROM ?? '').trim(),
+      fromName,
+      configured: Boolean(apiKey),
+    }
+  }
+
   return {
+    transport,
     host,
     port,
     secure,
     user,
     password,
     from: (raw.MAIL_FROM ?? '').trim() || user,
-    fromName: (raw.MAIL_FROM_NAME ?? '').trim() || 'CampusIQ',
+    fromName,
     configured: Boolean(user && password),
   }
 }

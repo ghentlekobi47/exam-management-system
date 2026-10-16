@@ -9,6 +9,7 @@ const config = {
   port: env.DB_PORT,
   dialect: 'mysql',
   logging: false,
+  ...(env.dbSsl ? { dialectOptions: { ssl: env.dbSsl } } : {}),
 }
 
 module.exports = {
