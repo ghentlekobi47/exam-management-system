@@ -96,9 +96,12 @@ export function AuthProvider({ children }) {
   // After the user edits their own profile, show the new details everywhere straight away
   const updateUser = useCallback((nextUser) => setUser(nextUser), [])
 
+  // After a password change the server signs out other devices and gives this one a fresh token
+  const replaceSession = useCallback((nextToken, nextUser) => applySession(nextToken, nextUser), [applySession])
+
   const value = useMemo(
-    () => ({ user, status, login, register, verifyEmail, resendCode, logout, updateUser }),
-    [user, status, login, register, verifyEmail, resendCode, logout, updateUser],
+    () => ({ user, status, login, register, verifyEmail, resendCode, logout, updateUser, replaceSession }),
+    [user, status, login, register, verifyEmail, resendCode, logout, updateUser, replaceSession],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

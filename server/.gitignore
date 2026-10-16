@@ -6,3 +6,7 @@ npm-debug.log*
 .env
 .env.*
 !.env.example
+
+# Certificates and keys (e.g. the database's ca.pem)
+*.pem
+*.key

@@ -11,6 +11,7 @@
     "prod:seed": "node scripts/with-prod-env.js sequelize-cli db:seed:all",
     "prod:create-admin": "node scripts/with-prod-env.js node scripts/create-admin.js",
     "test": "node --test",
+    "test:integration": "node scripts/run-integration-tests.js",
     "create-admin": "node scripts/create-admin.js",
     "db:migrate": "sequelize-cli db:migrate",
     "db:migrate:undo": "sequelize-cli db:migrate:undo",

@@ -124,6 +124,7 @@ function DetailsForm() {
 const EMPTY_PASSWORDS = { currentPassword: '', newPassword: '', confirmPassword: '' }
 
 function PasswordForm() {
+  const { replaceSession } = useAuth()
   const [form, setForm] = useState(EMPTY_PASSWORDS)
   const [error, setError] = useState(null)
   const [mismatch, setMismatch] = useState(false)
@@ -149,10 +150,12 @@ function PasswordForm() {
 
     setBusy(true)
     try {
-      await api('/auth/change-password', {
+      const { token, user } = await api('/auth/change-password', {
         method: 'POST',
         body: { currentPassword: form.currentPassword, newPassword: form.newPassword },
       })
+      // Other devices are now signed out; keep this one signed in with the fresh token
+      replaceSession(token, user)
       setForm(EMPTY_PASSWORDS)
       setSaved(true)
     } catch (err) {
@@ -199,7 +202,11 @@ function PasswordForm() {
           />
         </div>
         {generalError && <Alert>{error.message}</Alert>}
-        {saved && <Alert tone="success">Your password was changed. Use the new one next time you sign in.</Alert>}
+        {saved && (
+          <Alert tone="success">
+            Your password was changed. You stay signed in here; any other devices have been signed out.
+          </Alert>
+        )}
         <div className="flex justify-end">
           <Button
             type="submit"

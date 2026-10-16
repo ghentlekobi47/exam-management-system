@@ -20,6 +20,8 @@ const User = sequelize.define(
     isActive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
     // null until a self-registered student enters their emailed code
     emailVerifiedAt: { type: DataTypes.DATE, allowNull: true },
+    // Sign-ins (tokens) issued before this moment are no longer accepted
+    passwordChangedAt: { type: DataTypes.DATE, allowNull: true },
   },
   {
     tableName: 'users',

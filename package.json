@@ -8,6 +8,7 @@
     "dev:client": "npm --prefix client run dev",
     "install:all": "npm install && npm --prefix server install && npm --prefix client install",
     "test": "npm --prefix server test",
+    "test:integration": "npm --prefix server run test:integration",
     "lint": "npm --prefix client run lint"
   },
   "devDependencies": {

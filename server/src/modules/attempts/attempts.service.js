@@ -275,12 +275,21 @@ async function saveAnswer(attemptId, user, { questionId, optionId }) {
     }
   }
 
-  const existing = await AttemptAnswer.findOne({ where: { attemptId: attempt.id, questionId } })
-  if (existing) {
-    await existing.update({ selectedOptionId: optionId })
-  } else {
-    await AttemptAnswer.create({ attemptId: attempt.id, questionId, selectedOptionId: optionId })
-  }
+  // Lock the attempt while saving, the same lock grading takes, so an answer either
+  // lands before grading or is turned away; it can never slip in just after
+  await sequelize.transaction(async (transaction) => {
+    const locked = await ExamAttempt.findByPk(attempt.id, { transaction, lock: transaction.LOCK.UPDATE })
+    if (locked.status !== 'in_progress' || isTimeUp(locked, exam)) {
+      throw new HttpError(409, 'Time is up or this attempt was already submitted; answers can no longer change')
+    }
+
+    const existing = await AttemptAnswer.findOne({ where: { attemptId: attempt.id, questionId }, transaction })
+    if (existing) {
+      await existing.update({ selectedOptionId: optionId }, { transaction })
+    } else {
+      await AttemptAnswer.create({ attemptId: attempt.id, questionId, selectedOptionId: optionId }, { transaction })
+    }
+  })
 
   return { questionId, selectedOptionId: optionId }
 }
